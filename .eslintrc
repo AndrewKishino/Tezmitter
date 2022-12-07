@@ -1,0 +1,47 @@
+{
+  "extends": ["airbnb", "prettier"],
+  "parser": "@babel/eslint-parser",
+  "parserOptions": {
+    "requireConfigFile": false,
+    "babelOptions": {
+      "parserOpts": {
+        "plugins": ["jsx"]
+      }
+    }
+  },
+  "env": {
+    "browser": true,
+    "node": true
+  },
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "paths": ["src"]
+      }
+    }
+  },
+  "rules": {
+    // eslint
+    "camelcase": 0,
+    "lines-between-class-members": 0,
+    "max-classes-per-file": 0,
+    "max-len": 0,
+    "new-cap": 0,
+    "no-bitwise": 0,
+    "no-cond-assign": 0,
+    "no-console": 0,
+    "no-continue": 0,
+    "no-octal-escape": 0,
+    "no-param-reassign": 0,
+    "no-plusplus": 0,
+    "no-underscore-dangle": 0,
+    "no-use-before-define": 0,
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    // eslint-plugin-import
+    "import/prefer-default-export": 0,
+    //jsx-a11y
+    "jsx-a11y/click-events-have-key-events": 0,
+    // react
+    "react/destructuring-assignment": 0
+  }
+}

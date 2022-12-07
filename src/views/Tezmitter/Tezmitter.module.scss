@@ -1,0 +1,32 @@
+.mainComponentContainer {
+  display: flex;
+  justify-content: center;
+}
+
+.mainComponent {
+  background-color: #0e111c;
+  border: 1px solid #1b2235;
+  border-radius: 8px;
+  margin: 68px 8px 0px;
+  max-width: 500px;
+  padding: 10px;
+  width: 100%;
+}
+
+.tabContent {
+  background-color: #131a2a;
+  border-left: 1px solid #1b2235;
+  border-right: 1px solid #1b2235;
+  border-bottom: 1px solid #1b2235;
+  border-radius: 0 0 4px 4px;
+  padding: 8px;
+}
+
+.presetInputButton {
+  font-weight: 300 !important;
+  cursor: pointer;
+}
+
+.anonymousCheckbox {
+  font-weight: 300;
+}

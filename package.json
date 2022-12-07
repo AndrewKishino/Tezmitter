@@ -1,0 +1,101 @@
+{
+  "name": "tezmitter",
+  "version": "1.0.0",
+  "description": "Tezmitter",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrewkishino/tezmitter.git"
+  },
+  "keywords": [],
+  "author": "Andrew Kishino",
+  "license": "MIT",
+  "homepage": "https://tezmitter.com",
+  "scripts": {
+    "prepare": "husky install",
+    "start": "craco start",
+    "build": "craco build && node createWorkerBundle.js",
+    "test": "craco test",
+    "eject": "craco eject",
+    "deploy:ipfs": "node ipfs-deploy.mjs",
+    "build-worker-bundle": "node createWorkerBundle.js",
+    "install:clean": "rm -rf node_modules package-lock.json && npm install"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
+  "dependencies": {
+    "@airgap/beacon-dapp": "^3.3.0",
+    "@airgap/sapling-wasm": "^0.0.9",
+    "@taquito/beacon-wallet": "^14.2.0",
+    "@taquito/rpc": "^14.2.0",
+    "@taquito/sapling": "^14.2.0",
+    "@taquito/signer": "^15.0.0",
+    "@taquito/taquito": "^14.2.0",
+    "@taquito/utils": "^14.2.0",
+    "bip39": "^3.0.4",
+    "bootstrap": "^5.2.3",
+    "classnames": "^2.3.2",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "headroom.js": "0.12.0",
+    "helmet": "^6.0.0",
+    "husky": "^8.0.2",
+    "morgan": "^1.10.0",
+    "prop-types": "^15.8.1",
+    "react": "18.2.0",
+    "react-bootstrap": "^2.6.0",
+    "react-copy-to-clipboard": "^5.1.0",
+    "react-data-table-component": "^7.5.3",
+    "react-dom": "18.2.0",
+    "react-hot-toast": "^2.4.0",
+    "react-router": "^6.4.3",
+    "react-router-dom": "^6.4.3",
+    "react-scripts": "^5.0.1",
+    "socket.io": "^4.5.3",
+    "socket.io-client": "^4.5.3",
+    "workerpool": "^6.3.1"
+  },
+  "devDependencies": {
+    "@babel/eslint-parser": "^7.19.1",
+    "@craco/craco": "^7.0.0",
+    "@taqueria/plugin-contract-types": "^0.24.2",
+    "@taqueria/plugin-flextesa": "^0.24.2",
+    "@taqueria/plugin-jest": "^0.24.2",
+    "@taqueria/plugin-ligo": "^0.24.2",
+    "@taqueria/plugin-taquito": "^0.24.2",
+    "@taqueria/plugin-tezos-client": "^0.24.2",
+    "@types/react": "^18.0.25",
+    "buffer": "^6.0.3",
+    "compress-create-react-app": "^1.3.1",
+    "crypto-browserify": "^3.12.0",
+    "eslint": "^8.27.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jsx-a11y": "^6.6.1",
+    "eslint-plugin-react": "^7.31.10",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "husky": "^8.0.2",
+    "ipfs-http-client": "^59.0.0",
+    "lint-staged": "^13.0.3",
+    "listr": "^0.14.3",
+    "path-browserify": "^1.0.1",
+    "prettier": "^2.7.1",
+    "sass": "^1.56.1",
+    "stream-browserify": "^3.0.0",
+    "webpack": "^5.75.0"
+  },
+  "bugs": {
+    "url": "https://github.com/andrewkishino/tezmitter/issues"
+  },
+  "directories": {
+    "test": "tests"
+  }
+}
