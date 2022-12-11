@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import 'dotenv/config';
 import Listr from 'listr';
 import { create, globSource } from 'ipfs-http-client';
@@ -41,6 +40,7 @@ const pinToInfura = async (cwd = './build', pattern = '**/*', ctx = {}) => {
     },
   });
 
+  // eslint-disable-next-line no-restricted-syntax
   for await (const file of infuraClient.addAll(globSource(cwd, pattern), {
     wrapWithDirectory: true,
   })) {
@@ -54,39 +54,11 @@ const pinToInfura = async (cwd = './build', pattern = '**/*', ctx = {}) => {
   return buildCid;
 };
 
-const pinToPinata = async (cid) => {
-  const localClient = create();
-  const id = await localClient.id();
-
-  const auth = `Bearer ${process.env.PINATA_SECRET_ACCESS_TOKEN}`;
-
-  var config = {
-    method: 'POST',
-    headers: {
-      Authorization: auth,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      hashToPin: `${cid}`,
-      pinaOptions: {
-        hostNodes: id.addresses.map((address) => address.toString()),
-      },
-      pinataMetadata: {
-        name: 'Pinnacle Bakery Website',
-      },
-    }),
-  };
-
-  return fetch('https://api.pinata.cloud/pinning/pinByHash', config).then(
-    (res) => res.json(),
-  );
-};
-
 const publishName = async (cidPath) => {
   const localClient = create();
 
   return localClient.name.publish(cidPath, {
-    key: 'pinnacle-bakery',
+    key: 'tezmitter',
   });
 };
 
@@ -100,11 +72,7 @@ const tasks = new Listr([
     task: (ctx, task) => pinToInfura('./build', '**/*', ctx, task),
   },
   {
-    title: 'Pinning files to Pinata',
-    task: (ctx) => pinToPinata(ctx.localCid),
-  },
-  {
-    title: 'Publish new IPNS cid for pinnacle-bakery',
+    title: 'Publish new IPNS cid for tezmitter',
     task: async (ctx) => {
       if (
         ctx.localCid &&
