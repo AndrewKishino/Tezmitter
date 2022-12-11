@@ -518,14 +518,11 @@ function Tezmitter({
   const renderUnshield = () => (
     <div className={styles.tabContent}>
       <Form>
-        <Form.Group
-          className={`mb-2 ${styles.presetInputButton}`}
-          controlId="unshieldAddressInput"
-        >
+        <Form.Group className="mb-2" controlId="unshieldAddressInput">
           <Form.Label>
             Unshielding Address
             <Badge
-              className="ms-2"
+              className={`ms-2 ${styles.presetInputButton}`}
               onClick={() => {
                 setUnshieldAddressInput(account);
               }}
