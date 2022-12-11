@@ -349,6 +349,7 @@ function Tezmitter({
           <Form.Control
             as="textarea"
             rows={7}
+            placeholder="sask..."
             onChange={(evt) => setSecretKeyInput(evt.target.value)}
             value={secretKeyInput}
             isValid={secretKeyInputIsValid}
