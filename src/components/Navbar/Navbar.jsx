@@ -41,9 +41,6 @@ function AppNavbar({
               className="d-inline-block align-top"
             />{' '}
             TEZMITTER
-            {process.env.REACT_APP_TEZOS_NETWORK === 'mainnet'
-              ? ''
-              : ` [${process.env.REACT_APP_TEZOS_NETWORK}]`}
           </Link>
         </Navbar.Brand>
         <Nav className="ms-auto d-inline-block">
