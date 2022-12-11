@@ -14,7 +14,7 @@
   "scripts": {
     "prepare": "husky install",
     "start": "craco start",
-    "build": "craco build && node createWorkerBundle.js",
+    "build": "craco build && node createWorkerBundle.js && compress-cra",
     "test": "craco test",
     "eject": "craco eject",
     "deploy:ipfs": "node ipfs-deploy.mjs",

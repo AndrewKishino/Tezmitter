@@ -63,9 +63,7 @@ function Tezmitter({
   const { latestBlock, constants, connectionStatus } = useSocketState();
   const [tab, setTab] = useState('loadKey');
 
-  const [secretKeyInput, setSecretKeyInput] = useState(
-    'sask27SLmU9herddJ63PLDU49ZWze9zBzb9WAEuDhgzHXoi3gWtUjYhK5acZN6HTC7oCBiexRmdoGfkSf7mbsfYNv5JaTa51peQ8PJ1tGRGLt9pZdVCuaSSnkZH573jWYpF4v3WhJdowfyqkHE7EB4DVakf21Mh7TPHp4Gpqpef1tGmUgAKGXSQuwEXxtaS4hE6ZnjdeN7mRmdtWEm9YXepB4NmUZu2jR3PACLk1jM5jBBReE',
-  );
+  const [secretKeyInput, setSecretKeyInput] = useState('');
 
   const [isTransactionPending, setIsTransactionPending] = useState(false);
   const [isTransactionBuilding, setIsTransactionBuilding] = useState(false);
@@ -76,9 +74,7 @@ function Tezmitter({
   const [shieldMemoInput, setShieldMemoInput] = useState('');
   const [shieldAnonymously, setShieldAnonymously] = useState(true);
 
-  const [transferAddressInput, setTransferAddressInput] = useState(
-    'zet13JBXJXf2h9vw8ZCi6nvXUr2TFumExF4DNp7UopBF8LbQSMfBcnai9kz9i5MEFdhmE',
-  );
+  const [transferAddressInput, setTransferAddressInput] = useState('');
   const [transferAmountInput, setTransferAmountInput] = useState(0);
   const [transferMemoInput, setTransferMemoInput] = useState('');
   const [transferAnonymously, setTransferAnonymously] = useState(true);
