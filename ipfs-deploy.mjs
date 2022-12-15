@@ -54,6 +54,34 @@ const pinToInfura = async (cwd = './build', pattern = '**/*', ctx = {}) => {
   return buildCid;
 };
 
+const pinToPinata = async (cid) => {
+  const localClient = create();
+  const id = await localClient.id();
+
+  const auth = `Bearer ${process.env.PINATA_SECRET_ACCESS_TOKEN}`;
+
+  const config = {
+    method: 'POST',
+    headers: {
+      Authorization: auth,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      hashToPin: `${cid}`,
+      pinaOptions: {
+        hostNodes: id.addresses.map((address) => address.toString()),
+      },
+      pinataMetadata: {
+        name: 'Tezmitter',
+      },
+    }),
+  };
+
+  return fetch('https://api.pinata.cloud/pinning/pinByHash', config).then(
+    (res) => res.json(),
+  );
+};
+
 const publishName = async (cidPath) => {
   const localClient = create();
 
@@ -70,6 +98,10 @@ const tasks = new Listr([
   {
     title: 'Pinning files to Infura',
     task: (ctx, task) => pinToInfura('./build', '**/*', ctx, task),
+  },
+  {
+    title: 'Pinning files to Pinata',
+    task: (ctx) => pinToPinata(ctx.localCid),
   },
   {
     title: 'Publish new IPNS cid for tezmitter',
