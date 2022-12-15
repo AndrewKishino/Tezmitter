@@ -1,5 +1,8 @@
 import Client from './client';
 
+const DOMAIN =
+  process.env.NODE_ENV === 'production' ? process.env.REACT_APP_WEBSITE : '';
+
 export default class TezmitterApi extends Client {
   submitFundedTransaction = ({
     opHash,
@@ -8,7 +11,7 @@ export default class TezmitterApi extends Client {
     amount,
     contract,
   }) =>
-    this.post('/api/submitFundedTransaction', {
+    this.post(`${DOMAIN}/api/submitFundedTransaction`, {
       headers: {
         'Content-Type': 'application/json',
       },
