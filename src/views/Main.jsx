@@ -80,8 +80,10 @@ const wallet = new BeaconWallet({
     [NetworkType.KATHMANDUNET]: 'https://kathmandunet.tzkt.io',
   }),
 });
+const DOMAIN =
+  process.env.NODE_ENV === 'production' ? process.env.REACT_APP_WEBSITE : '/';
 
-const socket = io('/');
+const socket = io(DOMAIN);
 
 function Main() {
   const mainRef = useRef(null);
