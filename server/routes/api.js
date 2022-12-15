@@ -1,10 +1,13 @@
 const express = require('express');
+const cors = require('cors');
 const { Tezmitter } = require('../services');
 
 const apiRouter = (io) => {
+  const tezmitter = new Tezmitter(io);
+
   const router = express.Router();
 
-  const tezmitter = new Tezmitter(io);
+  router.use(cors());
 
   router.post('/submitFundedTransaction', async (req, res) => {
     const { opHash, blockHash, shieldedTx, contract, amount } = req.body;
