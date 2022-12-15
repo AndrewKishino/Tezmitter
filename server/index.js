@@ -12,7 +12,12 @@ const liveBlockWebSocket = require('./liveBlockWebSocket');
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+  },
+});
+
 liveBlockWebSocket(io);
 
 io.on('connection', () => {
