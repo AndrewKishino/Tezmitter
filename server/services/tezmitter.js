@@ -18,20 +18,31 @@ tezos.setProvider({
 class Tezmitter {
   constructor(io) {
     this.io = io;
+    this.inMemoryQueue = [];
+    this.inMemoryOpMap = {};
+    this.transactionPending = false;
+    this.settlementProcessorTimeoutId = this.settlementProcessor();
   }
 
-  transactionInterval = setInterval(() => {
-    if (!this.transactionPending && this.inMemoryQueue.length) {
-      const tx = this.inMemoryQueue.shift();
-      this.settleFundedTransaction(tx);
+  settlementProcessor = () => setTimeout(this.settlementProcess, 15_000);
+
+  settlementProcess = async () => {
+    try {
+      if (!this.transactionPending && this.inMemoryQueue.length) {
+        this.transactionPending = true;
+        const tx = this.inMemoryQueue.shift();
+        await this.settleFundedTransaction(tx).catch((err) => {
+          console.error(err);
+        });
+      }
+      this.transactionPending = false;
+      this.settlementProcessorTimeoutId = this.settlementProcessor();
+    } catch (err) {
+      this.transactionPending = false;
+      this.settlementProcessorTimeoutId = this.settlementProcessor();
+      console.error(err);
     }
-  }, 15_000);
-
-  inMemoryQueue = [];
-
-  inMemoryOpMap = {};
-
-  transactionPending = false;
+  };
 
   validateFundedTransaction = async (opHash, blockHash, amount) => {
     if (this.inMemoryOpMap[opHash]) {
@@ -65,17 +76,6 @@ class Tezmitter {
     amount,
     contract,
   }) => {
-    if (this.transactionPending) {
-      this.inMemoryQueue.unshift({
-        opHash,
-        blockHash,
-        shieldedTx,
-        amount,
-        contract,
-      });
-      return;
-    }
-
     if (!contract) {
       throw new Error('No contract provided');
     }
@@ -98,7 +98,7 @@ class Tezmitter {
       )}`,
     );
 
-    tezos.contract
+    return tezos.contract
       .at(contract)
       .then((saplingContract) =>
         saplingContract.methods
@@ -108,15 +108,13 @@ class Tezmitter {
       .then((op) =>
         op.confirmation(2).then(() => {
           this.inMemoryOpMap[opHash] = true;
-          this.transactionPending = false;
           this.io.emit(opHash, true);
           return op.hash;
         }),
       )
       .catch((err) => {
-        console.log(err.message);
         this.inMemoryOpMap[opHash] = true;
-        this.transactionPending = false;
+        throw err;
       });
   };
 
