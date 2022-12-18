@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import workerpool from 'workerpool';
+import toast from 'react-hot-toast';
 
 export function useSaplingWorker(sk, saplingContractAddress, rpcUrl) {
   const [saplingWorker, setSaplingWorker] = useState(null);
@@ -27,7 +28,17 @@ export function useSaplingWorker(sk, saplingContractAddress, rpcUrl) {
         })
         .catch((err) => {
           setWorkerIsLoading(false);
-          console.error(err.message);
+          // Temporary for now to provide feedback to invalid keys
+          toast(<b>{err.message}</b>, {
+            icon: '❌',
+            position: 'bottom-center',
+            duration: 10_000,
+            style: {
+              borderRadius: '10px',
+              background: '#1b2235',
+              color: '#ffffff',
+            },
+          });
         });
     }
   }, [sk, saplingContractAddress, rpcUrl]);

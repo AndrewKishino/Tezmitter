@@ -28,19 +28,21 @@ const loadSaplingSecret = (sk, saplingContractAddress, rpcUrl) => {
   try {
     iMSK = new InMemorySpendingKey(sk);
   } catch (err) {
-    console.error(err.message);
     iMSK = null;
+    sTk = null;
+    throw err;
   }
 
   try {
     sTk = new SaplingToolkit(
-      { saplingSigner: new InMemorySpendingKey(sk) },
+      { saplingSigner: iMSK },
       { contractAddress: saplingContractAddress, memoSize: 8 },
       new RpcReadAdapter(new RpcClient(rpcUrl)),
     );
   } catch (err) {
-    console.error(err.message);
+    iMSK = null;
     sTk = null;
+    throw err;
   }
 };
 
