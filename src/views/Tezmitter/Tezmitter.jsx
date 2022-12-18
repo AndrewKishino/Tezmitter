@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+import Modal from 'react-bootstrap/Modal';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Spinner from 'react-bootstrap/Spinner';
 import Tab from 'react-bootstrap/Tab';
@@ -41,6 +42,60 @@ const isValidContract = (contract = '') =>
 
 const tezmitterApi = new TezmitterApi();
 
+function HelpModal({ show, onHide }) {
+  return (
+    <Modal
+      show={show}
+      onHide={onHide}
+      size="lg"
+      aria-labelledby="contained-modal-title-vcenter"
+      centered
+      animation={false}
+      backdropClassName={styles.modalBackdrop}
+    >
+      <Modal.Header closeButton closeVariant="white">
+        <Modal.Title id="contained-modal-title-vcenter">
+          How to get started with Tezmitter
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <h5>Sapling Secret Key</h5>
+        <p>
+          In order to use Tezmitter, you will need to have a Sapling secret key
+          which can be generated using the Octez client and issuing the command:
+        </p>
+        <p className={`${styles.codeBlock} font-monospace`}>
+          ./octez-client sapling gen key test-sapling-key --unencrypted
+        </p>
+        <p>
+          By default, this should generate a new Sapling secret key at{' '}
+          <span className={`${styles.monoSpace} font-monospace`}>
+            {' '}
+            ~/.tezos-client/sapling_keys
+          </span>
+          . The unencrypted Sapling secret key starts with{' '}
+          <span className={`${styles.monoSpace} font-monospace`}>sask...</span>.
+        </p>
+
+        <h5>Connected Wallet</h5>
+        <p>
+          Any Beacon compatible wallet can be connected to Tezmitter in order to
+          submit sapling transactions directly or submit{' '}
+          <Link to="/about">funded</Link> transactions.
+        </p>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button onClick={onHide}>Close</Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+HelpModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  onHide: PropTypes.func.isRequired,
+};
+
 function Tezmitter({
   account,
   getSaplingAccountData,
@@ -64,6 +119,7 @@ function Tezmitter({
   const [tab, setTab] = useState('loadKey');
 
   const [secretKeyInput, setSecretKeyInput] = useState('');
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const [isTransactionPending, setIsTransactionPending] = useState(false);
   const [isTransactionBuilding, setIsTransactionBuilding] = useState(false);
@@ -381,6 +437,17 @@ function Tezmitter({
             'Load Key'
           )}
         </Button>
+        <Button
+          className="ms-2"
+          variant="secondary"
+          size="md"
+          onClick={() => {
+            setShowHelpModal(true);
+          }}
+          disabled={saplingWorkerIsLoading}
+        >
+          Help
+        </Button>
       </Form>
     </div>
   );
@@ -451,7 +518,7 @@ function Tezmitter({
             label="Submit transaction anonymously"
             checked={shieldAnonymously}
             disabled={isTransactionPending}
-            onClick={() => {
+            onChange={() => {
               if (!isTransactionPending) {
                 setShieldAnonymously(!shieldAnonymously);
               }
@@ -570,7 +637,7 @@ function Tezmitter({
             label="Submit transaction anonymously"
             checked={unshieldAnonymously}
             disabled={isTransactionPending}
-            onClick={() => {
+            onChange={() => {
               if (!isTransactionPending) {
                 setUnshieldAnonymously(!unshieldAnonymously);
               }
@@ -688,7 +755,7 @@ function Tezmitter({
             label="Submit transaction anonymously"
             checked={transferAnonymously}
             disabled={isTransactionPending}
-            onClick={() => {
+            onChange={() => {
               if (!isTransactionPending) {
                 setTransferAnonymously(!transferAnonymously);
               }
@@ -937,6 +1004,12 @@ function Tezmitter({
             </Tab>
           </Tabs>
         )}
+        <HelpModal
+          show={showHelpModal}
+          onHide={() => {
+            setShowHelpModal(false);
+          }}
+        />
       </div>
     </div>
   );

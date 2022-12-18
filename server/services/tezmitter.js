@@ -34,8 +34,8 @@ class Tezmitter {
         await this.settleFundedTransaction(tx).catch((err) => {
           console.error(err);
         });
+        this.transactionPending = false;
       }
-      this.transactionPending = false;
       this.settlementProcessorTimeoutId = this.settlementProcessor();
     } catch (err) {
       this.transactionPending = false;
