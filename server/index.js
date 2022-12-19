@@ -30,7 +30,7 @@ app.use(
     crossOriginEmbedderPolicy: false,
   }),
 );
-app.use(morgan('dev'));
+app.use(morgan('common'));
 app.use(express.json());
 
 app.use('/api', apiRouter(io));
