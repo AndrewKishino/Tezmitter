@@ -856,6 +856,7 @@ function Tezmitter({
           onClick={() => {
             setRpcUrlInput(RPC_MAP[process.env.REACT_APP_TEZOS_NETWORK]);
             setRpcUrl(RPC_MAP[process.env.REACT_APP_TEZOS_NETWORK]);
+            setSaplingContractInput(process.env.REACT_APP_SAPLING_CONTRACT);
             setSaplingContract(process.env.REACT_APP_SAPLING_CONTRACT);
             reInitializeSapling();
           }}

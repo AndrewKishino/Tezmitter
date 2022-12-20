@@ -30,7 +30,11 @@ app.use(
     crossOriginEmbedderPolicy: false,
   }),
 );
-app.use(morgan('common'));
+app.use(
+  morgan(
+    '[:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length]',
+  ),
+);
 app.use(express.json());
 
 app.use('/api', apiRouter(io));
