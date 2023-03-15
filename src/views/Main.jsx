@@ -66,7 +66,6 @@ const RPC_MAP = {
   [NetworkType.KATHMANDUNET]: 'https://kathmandunet.ecadinfra.com',
 };
 
-// const SAPLING_CONTRACT = 'KT1JMDxmQ4DAbzXpzAJmL6QeZ9HB7DTVnZYd';
 const SAPLING_CONTRACT = process.env.REACT_APP_SAPLING_CONTRACT;
 
 const wallet = new BeaconWallet({
@@ -93,7 +92,7 @@ function Main() {
     RPC_MAP[process.env.REACT_APP_TEZOS_NETWORK],
   );
   const [saplingContract, setSaplingContract] = useLocalStorage(
-    'SAPLING_CONTRACT',
+    'SAPLING_CONTRACT_CTEZ',
     SAPLING_CONTRACT,
   );
 

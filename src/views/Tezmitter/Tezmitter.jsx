@@ -474,7 +474,10 @@ function Tezmitter({
           <Form.Control
             onChange={(evt) => {
               setShieldAmountInput(
-                evt.target.value ? parseFloat(evt.target.value) : undefined,
+                evt.target.value
+                  ? Math.round(parseFloat(evt.target.value) * 1_000_000) /
+                      1_000_000
+                  : undefined,
               );
             }}
             type="number"
@@ -569,9 +572,10 @@ function Tezmitter({
           <Form.Control
             onChange={(evt) => {
               setUnshieldAmountInput(
-                parseFloat(
-                  evt.target.value ? parseFloat(evt.target.value) : undefined,
-                ),
+                evt.target.value
+                  ? Math.round(parseFloat(evt.target.value) * 1_000_000) /
+                      1_000_000
+                  : undefined,
               );
             }}
             type="number"
@@ -653,9 +657,10 @@ function Tezmitter({
           <Form.Control
             onChange={(evt) => {
               setTransferAmountInput(
-                parseFloat(
-                  evt.target.value ? parseFloat(evt.target.value) : undefined,
-                ),
+                evt.target.value
+                  ? Math.round(parseFloat(evt.target.value) * 1_000_000) /
+                      1_000_000
+                  : undefined,
               );
             }}
             type="number"
