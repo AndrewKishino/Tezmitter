@@ -14,10 +14,11 @@ import Tabs from 'react-bootstrap/Tabs';
 import Tooltip from 'react-bootstrap/Tooltip';
 import toast from 'react-hot-toast';
 import { NetworkType } from '@airgap/beacon-dapp';
+import { nanoid } from 'nanoid';
 
 import TezmitterApi from 'clients/tezmitterApi';
 import { useSocketState } from 'context/SocketContext';
-import TezosValue from 'components/TezosValue';
+import CtezValue from 'components/CtezValue';
 
 import styles from './Tezmitter.module.scss';
 
@@ -28,6 +29,10 @@ const RPC_MAP = {
 };
 
 const BASE_FEE = parseFloat(process.env.REACT_APP_BASE_FEE);
+
+const CTEZ_CONTRACT = process.env.REACT_APP_CTEZ_CONTRACT;
+
+const SAPLING_FEE_ADDRESS = process.env.REACT_APP_SAPLING_FEE_ADDRESS;
 
 const isValidUrl = (urlString = '') => {
   try {
@@ -80,8 +85,8 @@ function HelpModal({ show, onHide }) {
         <h5>Connected Wallet</h5>
         <p>
           Any Beacon compatible wallet can be connected to Tezmitter in order to
-          submit sapling transactions directly or submit{' '}
-          <Link to="/about">funded</Link> transactions.
+          submit sapling transactions directly or submit transactions through an{' '}
+          <Link to="/about">injector service</Link>.
         </p>
       </Modal.Body>
       <Modal.Footer>
@@ -94,6 +99,47 @@ function HelpModal({ show, onHide }) {
 HelpModal.propTypes = {
   show: PropTypes.bool.isRequired,
   onHide: PropTypes.func.isRequired,
+};
+
+function ConfirmInjectModal({ txn, onHide, confirm }) {
+  return (
+    <Modal
+      show={!!txn}
+      onHide={onHide}
+      size="md"
+      aria-labelledby="contained-modal-title-vcenter"
+      centered
+      animation={false}
+      backdropClassName={styles.modalBackdrop}
+    >
+      <Modal.Header closeButton closeVariant="white">
+        <Modal.Title id="contained-modal-title-vcenter">
+          Submit Sapling Transaction
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <p>
+          The sapling transaction has been generated. This transaction includes
+          a <CtezValue value={0.5} /> fee if you wish to submit it through an
+          injector service. Please confirm your selection.
+        </p>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onHide}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={confirm}>
+          Confirm
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+ConfirmInjectModal.propTypes = {
+  txn: PropTypes.bool.isRequired,
+  onHide: PropTypes.func.isRequired,
+  confirm: PropTypes.func.isRequired,
 };
 
 function Tezmitter({
@@ -120,6 +166,7 @@ function Tezmitter({
 
   const [secretKeyInput, setSecretKeyInput] = useState('');
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [confirmInjectTxn, setConfirmInjectTxn] = useState('');
 
   const [isTransactionPending, setIsTransactionPending] = useState(false);
   const [isTransactionBuilding, setIsTransactionBuilding] = useState(false);
@@ -128,16 +175,14 @@ function Tezmitter({
   const [shieldAddressInput, setShieldAddressInput] = useState('');
   const [shieldAmountInput, setShieldAmountInput] = useState(0);
   const [shieldMemoInput, setShieldMemoInput] = useState('');
-  const [shieldAnonymously, setShieldAnonymously] = useState(true);
 
   const [transferAddressInput, setTransferAddressInput] = useState('');
   const [transferAmountInput, setTransferAmountInput] = useState(0);
   const [transferMemoInput, setTransferMemoInput] = useState('');
-  const [transferAnonymously, setTransferAnonymously] = useState(true);
+  const [transferAnonymously, setTransferAnonymously] = useState(false);
 
   const [unshieldAddressInput, setUnshieldAddressInput] = useState('');
   const [unshieldAmountInput, setUnshieldAmountInput] = useState(0);
-  const [unshieldAnonymously, setUnshieldAnonymously] = useState(true);
 
   const [rpcUrlInput, setRpcUrlInput] = useState(rpcUrl);
   const [saplingContractInput, setSaplingContractInput] =
@@ -159,12 +204,17 @@ function Tezmitter({
   const transferAddressInputIsValid =
     transferAddressInput.startsWith('zet') &&
     transferAddressInput.length === 69;
-  const transferAmountInputisValid =
-    transferAmountInput > 0 &&
-    transferAmountInput <= shieldedBalance / 1_000_000;
-  const transferAmountInputisInvalid =
-    transferAmountInput < 0 ||
-    transferAmountInput > shieldedBalance / 1_000_000;
+  const transferAmountInputisValid = transferAnonymously
+    ? transferAmountInput > 0 &&
+      transferAmountInput <= shieldedBalance / 1_000_000 &&
+      transferAmountInput + BASE_FEE <= shieldedBalance / 1_000_000
+    : transferAmountInput > 0 &&
+      transferAmountInput <= shieldedBalance / 1_000_000;
+  const transferAmountInputisInvalid = transferAnonymously
+    ? transferAmountInput < 0 ||
+      transferAmountInput + BASE_FEE > shieldedBalance / 1_000_000
+    : transferAmountInput < 0 ||
+      transferAmountInput > shieldedBalance / 1_000_000;
 
   useEffect(() => {
     if (saplingWorkerLoaded && tab === 'loadKey') {
@@ -194,92 +244,55 @@ function Tezmitter({
     setIsTransactionPending(true);
     setIsTransactionBuilding(true);
 
-    if (!shieldAnonymously) {
-      prepareShieldedTransaction({
+    return prepareShieldedTransaction([
+      {
         to: shieldAddressInput,
         amount: shieldAmountInput,
         memo: shieldMemoInput,
         mutez: false,
-      })
-        .then((shieldedTx) => {
-          setIsTransactionBuilding(false);
-          submitSaplingTransaction(shieldedTx, shieldAmountInput);
-        })
-        .catch((err) => {
-          console.error(err.message);
-          triggerToast('Transaction failed', '❌');
-          setIsTransactionBuilding(false);
-          setIsTransactionPending(false);
-        });
-    } else {
-      const shieldTransaction = await prepareShieldedTransaction({
-        to: shieldAddressInput,
-        amount: shieldAmountInput,
-        memo: shieldMemoInput,
-        mutez: false,
-      }).then((shieldedTx) => {
+      },
+    ])
+      .then((shieldedTx) => {
         setIsTransactionBuilding(false);
-        return shieldedTx;
-      });
-
-      submitFundingTransaction(shieldAmountInput, shieldTransaction)
-        .then(() => {
-          triggerToast('Transaction submitted', '✅');
-          getSaplingAccountData();
-          setIsTransactionPending(false);
-        })
-        .catch((err) => {
+        submitSaplingTransaction(shieldedTx, shieldAmountInput).catch((err) => {
           console.error(err.message);
           triggerToast('Transaction failed', '❌');
           setIsTransactionBuilding(false);
           setIsTransactionPending(false);
         });
-    }
+      })
+      .catch((err) => {
+        console.error(err.message);
+        triggerToast('Transaction failed', '❌');
+        setIsTransactionBuilding(false);
+        setIsTransactionPending(false);
+      });
   };
 
   const submitUnshieldTransaction = async () => {
     setIsTransactionPending(true);
     setIsTransactionBuilding(true);
 
-    if (!unshieldAnonymously) {
-      prepareUnshieldedTransaction({
-        to: unshieldAddressInput,
-        amount: unshieldAmountInput,
-        mutez: false,
-      })
-        .then((shieldedTx) => {
-          setIsTransactionBuilding(false);
-          submitSaplingTransaction(shieldedTx);
-        })
-        .catch((err) => {
-          console.error(err.message);
-          triggerToast('Transaction failed', '❌');
-          setIsTransactionBuilding(false);
-          setIsTransactionPending(false);
-        });
-    } else {
-      const unshieldTransaction = await prepareUnshieldedTransaction({
-        to: unshieldAddressInput,
-        amount: unshieldAmountInput,
-        mutez: false,
-      }).then((shieldedTx) => {
+    return prepareUnshieldedTransaction({
+      to: unshieldAddressInput,
+      amount: unshieldAmountInput,
+      mutez: false,
+    })
+      .then((shieldedTx) => {
         setIsTransactionBuilding(false);
-        return shieldedTx;
-      });
-
-      submitFundingTransaction(0, unshieldTransaction)
-        .then(() => {
-          triggerToast('Transaction submitted', '✅');
-          getSaplingAccountData();
-          setIsTransactionPending(false);
-        })
-        .catch((err) => {
+        submitSaplingTransaction(shieldedTx).catch((err) => {
           console.error(err.message);
           triggerToast('Transaction failed', '❌');
           setIsTransactionBuilding(false);
           setIsTransactionPending(false);
         });
-    }
+      })
+      .catch((err) => {
+        console.error(err.message);
+        triggerToast('Transaction failed', '❌');
+        setIsTransactionBuilding(false);
+        setIsTransactionPending(false);
+      });
   };
 
   const submitTransferTransaction = async () => {
@@ -287,15 +300,22 @@ function Tezmitter({
     setIsTransactionBuilding(true);
 
     if (!transferAnonymously) {
-      prepareSaplingTransaction({
-        to: transferAddressInput,
-        amount: transferAmountInput,
-        memo: transferMemoInput,
-        mutez: false,
-      })
+      prepareSaplingTransaction([
+        {
+          to: transferAddressInput,
+          amount: transferAmountInput,
+          memo: transferMemoInput,
+          mutez: false,
+        },
+      ])
         .then((shieldedTx) => {
           setIsTransactionBuilding(false);
-          submitSaplingTransaction(shieldedTx);
+          submitSaplingTransaction(shieldedTx).catch((err) => {
+            console.error(err.message);
+            triggerToast('Transaction failed', '❌');
+            setIsTransactionBuilding(false);
+            setIsTransactionPending(false);
+          });
         })
         .catch((err) => {
           console.error(err.message);
@@ -304,98 +324,63 @@ function Tezmitter({
           setIsTransactionPending(false);
         });
     } else {
-      const transferTransaction = await prepareSaplingTransaction({
-        to: transferAddressInput,
-        amount: transferAmountInput,
-        mutez: false,
-      }).then((shieldedTx) => {
-        setIsTransactionBuilding(false);
-        return shieldedTx;
-      });
+      const shieldedTx = await prepareSaplingTransaction([
+        {
+          to: SAPLING_FEE_ADDRESS,
+          amount: BASE_FEE,
+          mutez: false,
+        },
+        {
+          to: transferAddressInput,
+          amount: transferAmountInput,
+          memo: transferMemoInput,
+          mutez: false,
+        },
+      ]);
 
-      submitFundingTransaction(0, transferTransaction)
-        .then(() => {
-          triggerToast('Transaction submitted', '✅');
-          getSaplingAccountData();
-          setIsTransactionPending(false);
-        })
-        .catch((err) => {
-          console.error(err.message);
-          triggerToast('Transaction failed', '❌');
-          setIsTransactionBuilding(false);
-          setIsTransactionPending(false);
-        });
+      setIsTransactionBuilding(false);
+      setConfirmInjectTxn(shieldedTx);
     }
   };
 
-  const estimateSaplingTransactionCost = (amount, shieldedTx) =>
-    tezosClient.wallet.at(saplingContract).then((contract) => {
-      const transferParams = contract.methods
-        .default([shieldedTx])
-        .toTransferParams({ amount });
-      return tezosClient.estimate.transfer(transferParams);
-    });
-
-  const submitFundingTransaction = async (amount, shieldedTx) => {
-    setFundingTransactionStatus('Estimating fees');
-    const estimate = await estimateSaplingTransactionCost(amount, shieldedTx);
-
-    const transactionCost = estimate.totalCost / 1_000_000;
-
-    const totalAmount = +(amount + BASE_FEE + transactionCost).toFixed(6);
-
-    setFundingTransactionStatus('Requesting funds');
-    const fundingOperation = await tezosClient.wallet
-      .transfer({
-        to: process.env.REACT_APP_FUNDING_ADDRESS,
-        amount: totalAmount,
-      })
-      .send()
-      .then((op) =>
-        op.confirmation(1).then(({ block }) => {
-          setFundingTransactionStatus('Confirming transaction (1/2)');
-          return op.confirmation(2).then(() => {
-            setFundingTransactionStatus('Confirming transaction (2/2)');
-            return {
-              opHash: op.opHash,
-              blockHash: block.hash,
-            };
-          });
-        }),
-      )
-      .catch((err) => {
-        setFundingTransactionStatus('');
-        console.error(err.message);
-        throw err;
-      });
-
-    socket.on(fundingOperation.opHash, () => {
-      triggerToast('Transaction complete', '✅');
-      getSaplingAccountData();
-    });
-
+  const submitPrivateTransaction = async (shieldedTx, txnId) => {
     setFundingTransactionStatus('Submitting transaction');
-    await tezmitterApi.submitFundedTransaction({
-      ...fundingOperation,
+    await tezmitterApi.submitPrivateTransaction({
+      txnId,
       shieldedTx,
-      amount,
       contract: saplingContract,
     });
-
     setFundingTransactionStatus('');
   };
 
-  const submitSaplingTransaction = (saplingTransaction, amount = 0) =>
-    tezosClient.wallet
-      .at(saplingContract)
-      .then((contract) =>
-        contract.methods.default([saplingTransaction]).send({ amount }),
-      )
+  const submitSaplingTransaction = async (saplingTransaction, amount) => {
+    const sContract = await tezosClient.wallet.at(saplingContract);
+    const cTezContract = await tezosClient.wallet.at(CTEZ_CONTRACT);
+
+    let batch;
+
+    if (amount) {
+      batch = await tezosClient.wallet
+        .batch()
+        .withContractCall(
+          cTezContract.methods.approve(saplingContract, amount * 1_000_000),
+        )
+        .withContractCall(sContract.methods.default([saplingTransaction]));
+    } else {
+      batch = await tezosClient.wallet
+        .batch()
+        .withContractCall(sContract.methods.default([saplingTransaction]));
+    }
+
+    await batch
+      .send()
       .then((op) => op.confirmation(1))
       .then(() => {
         triggerToast('Transaction submitted', '✅');
+        getSaplingAccountData();
         setIsTransactionPending(false);
       });
+  };
 
   const renderLoadKey = () => (
     <div className={styles.tabContent}>
@@ -464,13 +449,12 @@ function Tezmitter({
                 setShieldAddressInput(saplingAccount);
               }}
             >
-              Use my sapling address (
-              <TezosValue
+              Use my sapling address. Shielded balance:{' '}
+              <CtezValue
                 value={(shieldedBalance / 1_000_000).toLocaleString(undefined, {
                   maximumFractionDigits: 6,
                 })}
               />
-              )
             </Badge>
           </Form.Label>
           <Form.Control
@@ -482,21 +466,23 @@ function Tezmitter({
             isValid={shieldAddressInputIsValid}
           />
           <Form.Text className="text-muted">
-            Shield tez and credit this sapling address
+            Shield ctez and credit this sapling address
           </Form.Text>
         </Form.Group>
         <Form.Group className="mb-2" controlId="shieldAmountInput">
           <Form.Label>Amount</Form.Label>
           <Form.Control
             onChange={(evt) => {
-              setShieldAmountInput(parseInt(evt.target.value || 0, 10));
+              setShieldAmountInput(
+                evt.target.value ? parseFloat(evt.target.value) : undefined,
+              );
             }}
             type="number"
             value={shieldAmountInput}
             isValid={shieldAmountInput > 0}
             isInvalid={shieldAmountInput < 0}
           />
-          <Form.Text className="text-muted">Amount of tez to shield</Form.Text>
+          <Form.Text className="text-muted">Amount of ctez to shield</Form.Text>
         </Form.Group>
         <Form.Group className="mb-3" controlId="shieldMemoInput">
           <Form.Label>Memo (optional)</Form.Label>
@@ -511,38 +497,6 @@ function Tezmitter({
             Attach a memo to the sapling transaction
           </Form.Text>
         </Form.Group>
-        <div>
-          <Form.Check
-            className={`mb-2 me-2 ${styles.anonymousCheckbox}`}
-            type="checkbox"
-            label="Submit transaction anonymously"
-            checked={shieldAnonymously}
-            disabled={isTransactionPending}
-            onChange={() => {
-              if (!isTransactionPending) {
-                setShieldAnonymously(!shieldAnonymously);
-              }
-            }}
-            inline
-          />
-          <OverlayTrigger
-            placement="right"
-            delay={{ show: 250, hide: 400 }}
-            overlay={
-              <Tooltip>
-                Generate the sapling transaction and submit the transaction to a
-                dedicated transaction submitter
-              </Tooltip>
-            }
-          >
-            <i className="fad fa-info-circle" />
-          </OverlayTrigger>
-          {isTransactionPending ? null : (
-            <Link className="d-inline-block ms-2" to="/about">
-              Learn more
-            </Link>
-          )}
-        </div>
         <Button
           variant="primary"
           onClick={submitShieldTransaction}
@@ -607,14 +561,18 @@ function Tezmitter({
             isValid={unshieldAddressInputIsValid}
           />
           <Form.Text className="text-muted">
-            Unshield tez from your sapling address to this address
+            Unshield ctez from your sapling address to this address
           </Form.Text>
         </Form.Group>
         <Form.Group className="mb-3" controlId="unshieldAmountInput">
           <Form.Label>Amount</Form.Label>
           <Form.Control
             onChange={(evt) => {
-              setUnshieldAmountInput(parseInt(evt.target.value || 0, 10));
+              setUnshieldAmountInput(
+                parseFloat(
+                  evt.target.value ? parseFloat(evt.target.value) : undefined,
+                ),
+              );
             }}
             type="number"
             value={unshieldAmountInput}
@@ -622,46 +580,14 @@ function Tezmitter({
             isInvalid={unshieldAmountInputIsInvalid}
           />
           <Form.Text className="text-muted">
-            Amount of tez to unshield. Balance:{' '}
-            <TezosValue
+            Amount of ctez to unshield. Shielded balance:{' '}
+            <CtezValue
               value={(shieldedBalance / 1_000_000).toLocaleString(undefined, {
                 maximumFractionDigits: 6,
               })}
             />
           </Form.Text>
         </Form.Group>
-        <div>
-          <Form.Check
-            className={`mb-2 me-2 ${styles.anonymousCheckbox}`}
-            type="checkbox"
-            label="Submit transaction anonymously"
-            checked={unshieldAnonymously}
-            disabled={isTransactionPending}
-            onChange={() => {
-              if (!isTransactionPending) {
-                setUnshieldAnonymously(!unshieldAnonymously);
-              }
-            }}
-            inline
-          />
-          <OverlayTrigger
-            placement="right"
-            delay={{ show: 250, hide: 400 }}
-            overlay={
-              <Tooltip>
-                Generate the sapling transaction and submit the transaction to a
-                dedicated transaction submitter
-              </Tooltip>
-            }
-          >
-            <i className="fad fa-info-circle" />
-          </OverlayTrigger>
-          {isTransactionPending ? null : (
-            <Link className="d-inline-block ms-2" to="/about">
-              Learn more
-            </Link>
-          )}
-        </div>
         <Button
           variant="primary"
           onClick={submitUnshieldTransaction}
@@ -714,14 +640,23 @@ function Tezmitter({
             isValid={transferAddressInputIsValid}
           />
           <Form.Text className="text-muted">
-            Transfer shielded tez to this sapling address
+            Transfer shielded ctez to this sapling address
           </Form.Text>
         </Form.Group>
         <Form.Group className="mb-2" controlId="transferAmountInput">
-          <Form.Label>Amount</Form.Label>
+          <Form.Label>
+            Amount
+            {transferAnonymously ? ' + ' : ''}
+            {transferAnonymously ? <CtezValue value={0.5} /> : ''}
+            {transferAnonymously ? ' fee' : ''}
+          </Form.Label>
           <Form.Control
             onChange={(evt) => {
-              setTransferAmountInput(parseInt(evt.target.value || 0, 10));
+              setTransferAmountInput(
+                parseFloat(
+                  evt.target.value ? parseFloat(evt.target.value) : undefined,
+                ),
+              );
             }}
             type="number"
             value={transferAmountInput}
@@ -729,8 +664,8 @@ function Tezmitter({
             isInvalid={transferAmountInputisInvalid}
           />
           <Form.Text className="text-muted">
-            Amount of shielded tez to transfer. Balance:{' '}
-            <TezosValue
+            Amount of shielded ctez to transfer. Shielded balance:{' '}
+            <CtezValue
               value={(shieldedBalance / 1_000_000).toLocaleString(undefined, {
                 maximumFractionDigits: 6,
               })}
@@ -767,8 +702,8 @@ function Tezmitter({
             delay={{ show: 250, hide: 400 }}
             overlay={
               <Tooltip>
-                Generate the sapling transaction and submit the transaction to a
-                dedicated transaction submitter
+                Generate the sapling transaction and submit it to a transaction
+                injector service. ( <CtezValue value={0.5} /> fee )
               </Tooltip>
             }
           >
@@ -890,21 +825,13 @@ function Tezmitter({
               eventKey="shield"
               title={
                 <span>
-                  Shield Tez
+                  Shield ctez
                   <OverlayTrigger
                     placement="right"
                     delay={{ show: 250, hide: 400 }}
-                    overlay={
-                      <Tooltip>
-                        {shieldAnonymously ? 'Private' : 'Public'}
-                      </Tooltip>
-                    }
+                    overlay={<Tooltip>Public</Tooltip>}
                   >
-                    <i
-                      className={`fad fa-eye${
-                        shieldAnonymously ? '-slash' : ''
-                      } ms-2`}
-                    />
+                    <i className="fad fa-eye ms-2" />
                   </OverlayTrigger>
                 </span>
               }
@@ -940,21 +867,13 @@ function Tezmitter({
               eventKey="unshield"
               title={
                 <span>
-                  Unshield Tez
+                  Unshield ctez
                   <OverlayTrigger
                     placement="right"
                     delay={{ show: 250, hide: 400 }}
-                    overlay={
-                      <Tooltip>
-                        {unshieldAnonymously ? 'Private' : 'Public'}
-                      </Tooltip>
-                    }
+                    overlay={<Tooltip>Public</Tooltip>}
                   >
-                    <i
-                      className={`fad fa-eye${
-                        unshieldAnonymously ? '-slash' : ''
-                      } ms-2`}
-                    />
+                    <i className="fad fa-eye ms-2" />
                   </OverlayTrigger>
                 </span>
               }
@@ -1009,6 +928,38 @@ function Tezmitter({
           show={showHelpModal}
           onHide={() => {
             setShowHelpModal(false);
+          }}
+        />
+        <ConfirmInjectModal
+          txn={confirmInjectTxn}
+          onHide={() => {
+            setConfirmInjectTxn('');
+          }}
+          confirm={() => {
+            const txnId = nanoid();
+            socket.on(txnId, (successful) => {
+              getSaplingAccountData();
+              if (successful) {
+                triggerToast('Transaction processed', '✅');
+              }
+              socket.off(txnId);
+            });
+
+            submitPrivateTransaction(confirmInjectTxn, txnId)
+              .then(() => {
+                triggerToast('Transaction submitted', '✅');
+                getSaplingAccountData();
+                setIsTransactionPending(false);
+                setConfirmInjectTxn('');
+              })
+              .catch((err) => {
+                socket.off(txnId);
+                console.error(err.message);
+                triggerToast('Transaction failed', '❌');
+                setIsTransactionBuilding(false);
+                setIsTransactionPending(false);
+                setConfirmInjectTxn('');
+              });
           }}
         />
       </div>

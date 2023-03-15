@@ -9,16 +9,14 @@ const apiRouter = (io) => {
 
   router.use(cors());
 
-  router.post('/submitFundedTransaction', async (req, res) => {
-    const { opHash, blockHash, shieldedTx, contract, amount } = req.body;
+  router.post('/submitPrivateTransaction', async (req, res) => {
+    const { txnId, shieldedTx, contract } = req.body;
 
     try {
-      await tezmitter.queueFundedTransaction({
-        opHash,
-        blockHash,
+      await tezmitter.queuePrivateTransaction({
+        txnId,
         shieldedTx,
         contract,
-        amount,
       });
       res.status(200).send({ success: true });
     } catch (err) {

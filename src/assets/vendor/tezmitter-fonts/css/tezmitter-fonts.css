@@ -1,10 +1,10 @@
 @font-face {
   font-family: 'tezmitter-fonts';
-  src: url('../fonts/tezmitter-fonts.eot?ayicjz');
-  src: url('../fonts/tezmitter-fonts.eot?ayicjz#iefix') format('embedded-opentype'),
-    url('../fonts/tezmitter-fonts.ttf?ayicjz') format('truetype'),
-    url('../fonts/tezmitter-fonts.woff?ayicjz') format('woff'),
-    url('../fonts/tezmitter-fonts.svg?ayicjz#tezmitter-fonts') format('svg');
+  src: url('../fonts/tezmitter-fonts.eot?obwj4i');
+  src: url('../fonts/tezmitter-fonts.eot?obwj4i#iefix') format('embedded-opentype'),
+    url('../fonts/tezmitter-fonts.ttf?obwj4i') format('truetype'),
+    url('../fonts/tezmitter-fonts.woff?obwj4i') format('woff'),
+    url('../fonts/tezmitter-fonts.svg?obwj4i#tezmitter-fonts') format('svg');
   font-weight: normal;
   font-style: normal;
   font-display: block;
@@ -26,10 +26,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-.icon-tezos:before {
-  content: "\e900";
+.icon-ctez:before {
+  content: "\e902";
 }
 
-.icon-pinnacle-bakery:before {
-  content: "\e901";
+.icon-tezos:before {
+  content: "\e900";
 }

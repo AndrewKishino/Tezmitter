@@ -185,13 +185,8 @@ function Main() {
     });
   };
 
-  const prepareShieldedTransaction = ({
-    to = saplingAccount,
-    amount,
-    memo = '',
-    mutez = false,
-  }) =>
-    worker.exec('prepareShieldedTransaction', [[{ to, amount, memo, mutez }]]);
+  const prepareShieldedTransaction = (txns) =>
+    worker.exec('prepareShieldedTransaction', [txns]);
 
   const prepareUnshieldedTransaction = ({
     amount,
@@ -206,13 +201,8 @@ function Main() {
       },
     ]);
 
-  const prepareSaplingTransaction = ({
-    to,
-    amount,
-    memo = '',
-    mutez = false,
-  }) =>
-    worker.exec('prepareSaplingTransaction', [[{ to, amount, memo, mutez }]]);
+  const prepareSaplingTransaction = (txns) =>
+    worker.exec('prepareSaplingTransaction', [txns]);
 
   const getSaplingAccountData = () => {
     worker.exec('getSaplingTransactions').then(setTransactionHistory);
