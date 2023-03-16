@@ -938,6 +938,7 @@ function Tezmitter({
         <ConfirmInjectModal
           txn={confirmInjectTxn}
           onHide={() => {
+            setIsTransactionPending(false);
             setConfirmInjectTxn('');
           }}
           confirm={() => {
