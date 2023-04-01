@@ -359,12 +359,7 @@ function Tezmitter({
                 setShieldAddressInput(saplingAccount);
               }}
             >
-              Use my sapling address. Shielded balance:{' '}
-              <CtezValue
-                value={(shieldedBalance / 1_000_000).toLocaleString(undefined, {
-                  maximumFractionDigits: 6,
-                })}
-              />
+              Use my sapling address
             </Badge>
           </Form.Label>
           <Form.Control
@@ -494,12 +489,7 @@ function Tezmitter({
             isInvalid={unshieldAmountInputIsInvalid}
           />
           <Form.Text className="text-muted">
-            Amount of ctez to unshield. Shielded balance:{' '}
-            <CtezValue
-              value={(shieldedBalance / 1_000_000).toLocaleString(undefined, {
-                maximumFractionDigits: 6,
-              })}
-            />
+            Amount of ctez to unshield
           </Form.Text>
         </Form.Group>
         <Button
@@ -579,12 +569,7 @@ function Tezmitter({
             isInvalid={transferAmountInputisInvalid}
           />
           <Form.Text className="text-muted">
-            Amount of shielded ctez to transfer. Shielded balance:{' '}
-            <CtezValue
-              value={(shieldedBalance / 1_000_000).toLocaleString(undefined, {
-                maximumFractionDigits: 6,
-              })}
-            />
+            Amount of shielded ctez to transfer
           </Form.Text>
         </Form.Group>
         <Form.Group className="mb-3" controlId="transferMemoInput">
@@ -1054,6 +1039,19 @@ function Tezmitter({
       {saplingWorkerLoaded ? (
         <div className={styles.txnComponentContainer}>
           <div className={styles.txnComponent}>
+            <div className={styles.balanceContainer}>
+              <span>
+                Shielded balance:{' '}
+                <CtezValue
+                  value={(shieldedBalance / 1_000_000).toLocaleString(
+                    undefined,
+                    {
+                      maximumFractionDigits: 6,
+                    },
+                  )}
+                />
+              </span>
+            </div>
             <Tabs activeKey={txnTab} onSelect={setTxnTab}>
               <Tab eventKey="incoming" title="Incoming Transactions">
                 {renderIncomingTxns()}
