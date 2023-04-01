@@ -247,6 +247,7 @@ function Main() {
                 shieldedBalance={shieldedBalance}
                 socket={socket}
                 tezosClient={tezosClient}
+                transactionHistory={transactionHistory}
               />
             }
           />

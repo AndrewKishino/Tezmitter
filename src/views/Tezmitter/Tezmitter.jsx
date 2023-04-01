@@ -1,13 +1,11 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
-/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
-import Modal from 'react-bootstrap/Modal';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Pagination from 'react-bootstrap/Pagination';
 import Spinner from 'react-bootstrap/Spinner';
 import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
@@ -17,8 +15,11 @@ import { NetworkType } from '@airgap/beacon-dapp';
 import { nanoid } from 'nanoid';
 
 import TezmitterApi from 'clients/tezmitterApi';
-import { useSocketState } from 'context/SocketContext';
 import CtezValue from 'components/CtezValue';
+import ConfirmInjectModal from './sub/ConfirmInjectModal';
+import HelpModal from './sub/HelpModal';
+
+// import { useSocketState } from 'context/SocketContext';
 
 import styles from './Tezmitter.module.scss';
 
@@ -27,12 +28,11 @@ const RPC_MAP = {
   [NetworkType.GHOSTNET]: 'https://ghostnet.ecadinfra.com',
   [NetworkType.KATHMANDUNET]: 'https://kathmandunet.ecadinfra.com',
 };
-
 const BASE_FEE = parseFloat(process.env.REACT_APP_BASE_FEE);
-
 const CTEZ_CONTRACT = process.env.REACT_APP_CTEZ_CONTRACT;
-
 const SAPLING_FEE_ADDRESS = process.env.REACT_APP_SAPLING_FEE_ADDRESS;
+
+const ITEMS_PER_PAGE = 10;
 
 const isValidUrl = (urlString = '') => {
   try {
@@ -46,101 +46,6 @@ const isValidContract = (contract = '') =>
   contract.startsWith('KT') && contract.length === 36;
 
 const tezmitterApi = new TezmitterApi();
-
-function HelpModal({ show, onHide }) {
-  return (
-    <Modal
-      show={show}
-      onHide={onHide}
-      size="lg"
-      aria-labelledby="contained-modal-title-vcenter"
-      centered
-      animation={false}
-      backdropClassName={styles.modalBackdrop}
-    >
-      <Modal.Header closeButton closeVariant="white">
-        <Modal.Title id="contained-modal-title-vcenter">
-          How to get started with Tezmitter
-        </Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <h5>Sapling Secret Key</h5>
-        <p>
-          In order to use Tezmitter, you will need to have a Sapling secret key
-          which can be generated using the Octez client and issuing the command:
-        </p>
-        <p className={`${styles.codeBlock} font-monospace`}>
-          ./octez-client sapling gen key test-sapling-key --unencrypted
-        </p>
-        <p>
-          By default, this should generate a new Sapling secret key at{' '}
-          <span className={`${styles.monoSpace} font-monospace`}>
-            {' '}
-            ~/.tezos-client/sapling_keys
-          </span>
-          . The unencrypted Sapling secret key starts with{' '}
-          <span className={`${styles.monoSpace} font-monospace`}>sask...</span>.
-        </p>
-
-        <h5>Connected Wallet</h5>
-        <p>
-          Any Beacon compatible wallet can be connected to Tezmitter in order to
-          submit sapling transactions directly or submit transactions through an{' '}
-          <Link to="/about">injector service</Link>.
-        </p>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button onClick={onHide}>Close</Button>
-      </Modal.Footer>
-    </Modal>
-  );
-}
-
-HelpModal.propTypes = {
-  show: PropTypes.bool.isRequired,
-  onHide: PropTypes.func.isRequired,
-};
-
-function ConfirmInjectModal({ txn, onHide, confirm }) {
-  return (
-    <Modal
-      show={!!txn}
-      onHide={onHide}
-      size="md"
-      aria-labelledby="contained-modal-title-vcenter"
-      centered
-      animation={false}
-      backdropClassName={styles.modalBackdrop}
-    >
-      <Modal.Header closeButton closeVariant="white">
-        <Modal.Title id="contained-modal-title-vcenter">
-          Submit Sapling Transaction
-        </Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <p>
-          The sapling transaction has been generated. This transaction includes
-          a <CtezValue value={0.5} /> fee if you wish to submit it through an
-          injector service. Please confirm your selection.
-        </p>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={onHide}>
-          Cancel
-        </Button>
-        <Button variant="primary" onClick={confirm}>
-          Confirm
-        </Button>
-      </Modal.Footer>
-    </Modal>
-  );
-}
-
-ConfirmInjectModal.propTypes = {
-  txn: PropTypes.bool.isRequired,
-  onHide: PropTypes.func.isRequired,
-  confirm: PropTypes.func.isRequired,
-};
 
 function Tezmitter({
   account,
@@ -160,9 +65,11 @@ function Tezmitter({
   shieldedBalance,
   socket,
   tezosClient,
+  transactionHistory,
 }) {
-  const { latestBlock, constants, connectionStatus } = useSocketState();
+  // const { latestBlock, constants, connectionStatus } = useSocketState();
   const [tab, setTab] = useState('loadKey');
+  const [txnTab, setTxnTab] = useState('incoming');
 
   const [secretKeyInput, setSecretKeyInput] = useState('');
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -187,6 +94,9 @@ function Tezmitter({
   const [rpcUrlInput, setRpcUrlInput] = useState(rpcUrl);
   const [saplingContractInput, setSaplingContractInput] =
     useState(saplingContract);
+
+  const [incomingTransactionPage, setIncomingTransactionPage] = useState(1);
+  const [outgoingTransactionPage, setOutgoingTransactionPage] = useState(1);
 
   // Input validation
   const secretKeyInputIsValid =
@@ -821,155 +731,341 @@ function Tezmitter({
     </div>
   );
 
-  return (
-    <div className={styles.mainComponentContainer}>
-      <div className={styles.mainComponent}>
-        {saplingWorkerLoaded ? (
-          <Tabs activeKey={tab} onSelect={setTab}>
-            <Tab
-              eventKey="shield"
-              title={
-                <span>
-                  Shield ctez
-                  <OverlayTrigger
-                    placement="right"
-                    delay={{ show: 250, hide: 400 }}
-                    overlay={<Tooltip>Public</Tooltip>}
-                  >
-                    <i className="fad fa-eye ms-2" />
-                  </OverlayTrigger>
-                </span>
-              }
-            >
-              {renderShield()}
-            </Tab>
-            <Tab
-              eventKey="transfer"
-              title={
-                <span>
-                  Transfer
-                  <OverlayTrigger
-                    placement="right"
-                    delay={{ show: 250, hide: 400 }}
-                    overlay={
-                      <Tooltip>
-                        {transferAnonymously ? 'Private' : 'Public'}
-                      </Tooltip>
-                    }
-                  >
-                    <i
-                      className={`fad fa-eye${
-                        transferAnonymously ? '-slash' : ''
-                      } ms-2`}
-                    />
-                  </OverlayTrigger>
-                </span>
-              }
-            >
-              {renderTransfer()}
-            </Tab>
-            <Tab
-              eventKey="unshield"
-              title={
-                <span>
-                  Unshield ctez
-                  <OverlayTrigger
-                    placement="right"
-                    delay={{ show: 250, hide: 400 }}
-                    overlay={<Tooltip>Public</Tooltip>}
-                  >
-                    <i className="fad fa-eye ms-2" />
-                  </OverlayTrigger>
-                </span>
-              }
-            >
-              {renderUnshield()}
-            </Tab>
-            <Tab
-              eventKey="settings"
-              title={
-                <OverlayTrigger
-                  placement="right"
-                  delay={{ show: 250, hide: 400 }}
-                  overlay={<Tooltip>Settings</Tooltip>}
-                >
-                  <i className="fad fa-cogs" />
-                </OverlayTrigger>
-              }
-            >
-              {renderSettings()}
-            </Tab>
-          </Tabs>
-        ) : (
-          <Tabs className="" activeKey={tab} onSelect={setTab}>
-            <Tab
-              eventKey="loadKey"
-              title={
-                <span>
-                  Load key
-                  <i className="fad fa-key ms-2" />
-                </span>
-              }
-            >
-              {renderLoadKey()}
-            </Tab>
-            <Tab
-              eventKey="settings"
-              title={
-                <OverlayTrigger
-                  placement="right"
-                  delay={{ show: 250, hide: 400 }}
-                  overlay={<Tooltip>Settings</Tooltip>}
-                >
-                  <i className="fad fa-cogs" />
-                </OverlayTrigger>
-              }
-            >
-              {renderSettings()}
-            </Tab>
-          </Tabs>
-        )}
-        <HelpModal
-          show={showHelpModal}
-          onHide={() => {
-            setShowHelpModal(false);
-          }}
-        />
-        <ConfirmInjectModal
-          txn={confirmInjectTxn}
-          onHide={() => {
-            setIsTransactionPending(false);
-            setConfirmInjectTxn('');
-          }}
-          confirm={() => {
-            const txnId = nanoid();
-            socket.on(txnId, (successful) => {
-              getSaplingAccountData();
-              if (successful) {
-                triggerToast('Transaction processed', '✅');
-              }
-              socket.off(txnId);
-            });
+  const renderIncomingTxns = () => {
+    const pageItems = [];
+    const incomingTransactionLength = transactionHistory?.incoming?.length || 0;
+    const pages = Math.ceil(incomingTransactionLength / ITEMS_PER_PAGE);
 
-            submitPrivateTransaction(confirmInjectTxn, txnId)
-              .then(() => {
-                triggerToast('Transaction submitted', '✅');
-                getSaplingAccountData();
-                setIsTransactionPending(false);
-                setConfirmInjectTxn('');
-              })
-              .catch((err) => {
-                socket.off(txnId);
-                console.error(err.message);
-                triggerToast('Transaction failed', '❌');
-                setIsTransactionBuilding(false);
-                setIsTransactionPending(false);
-                setConfirmInjectTxn('');
-              });
-          }}
-        />
+    for (let number = 1; number <= pages; number++) {
+      if (Math.abs(number - incomingTransactionPage) < 5) {
+        pageItems.push(
+          <Pagination.Item
+            key={number}
+            active={number === incomingTransactionPage}
+            onClick={() => setIncomingTransactionPage(number)}
+          >
+            {number}
+          </Pagination.Item>,
+        );
+      } else if (Math.abs(number - incomingTransactionPage) === 5) {
+        pageItems.push(
+          <Pagination.Ellipsis
+            key={number}
+            onClick={() => setIncomingTransactionPage(number)}
+          />,
+        );
+      }
+    }
+
+    const startIndex = (incomingTransactionPage - 1) * ITEMS_PER_PAGE;
+
+    const pageTransactions =
+      transactionHistory?.incoming
+        ?.slice()
+        .reverse()
+        .slice(startIndex, startIndex + ITEMS_PER_PAGE) || [];
+
+    return (
+      <div className={styles.tabContent}>
+        {pageTransactions.map((txn, idx) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <div key={idx} className={styles.txnItem}>
+            <div>
+              From: {txn.paymentAddress.slice(0, 10)}...
+              {txn.paymentAddress.slice(-10)}
+              <div>
+                <small className="text-muted">Memo: {txn.memo}</small>
+              </div>
+            </div>
+            <div style={{ color: 'green' }}>
+              +{' '}
+              <CtezValue
+                value={(txn.value / 1_000_000).toLocaleString(undefined, {
+                  maximumFractionDigits: 6,
+                })}
+              />
+            </div>
+          </div>
+        ))}
+        <div className={styles.paginationContainer}>
+          <Pagination size="md">
+            <Pagination.First onClick={() => setIncomingTransactionPage(1)} />
+            <Pagination.Prev
+              onClick={() => {
+                if (incomingTransactionPage === 1) {
+                  return;
+                }
+                setIncomingTransactionPage(incomingTransactionPage - 1);
+              }}
+            />
+            {pageItems}
+            <Pagination.Next
+              onClick={() => {
+                if (incomingTransactionPage === pages) {
+                  return;
+                }
+                setIncomingTransactionPage(incomingTransactionPage + 1);
+              }}
+            />
+            <Pagination.Last
+              onClick={() => setIncomingTransactionPage(pages)}
+            />
+          </Pagination>
+        </div>
       </div>
-    </div>
+    );
+  };
+
+  const renderOutgoingTxns = () => {
+    const pageItems = [];
+    const outgoingTransactionLength = transactionHistory?.outgoing?.length || 0;
+    const pages = Math.ceil(outgoingTransactionLength / ITEMS_PER_PAGE);
+
+    for (let number = 1; number <= pages; number++) {
+      if (Math.abs(number - outgoingTransactionPage) < 5) {
+        pageItems.push(
+          <Pagination.Item
+            key={number}
+            active={number === outgoingTransactionPage}
+            onClick={() => setOutgoingTransactionPage(number)}
+          >
+            {number}
+          </Pagination.Item>,
+        );
+      } else if (Math.abs(number - outgoingTransactionPage) === 5) {
+        pageItems.push(
+          <Pagination.Ellipsis
+            key={number}
+            onClick={() => setOutgoingTransactionPage(number)}
+          />,
+        );
+      }
+    }
+
+    const startIndex = (outgoingTransactionPage - 1) * ITEMS_PER_PAGE;
+
+    const pageTransactions =
+      transactionHistory?.outgoing
+        ?.slice()
+        .reverse()
+        .slice(startIndex, startIndex + ITEMS_PER_PAGE) || [];
+
+    return (
+      <div className={styles.tabContent}>
+        {pageTransactions.map((txn, idx) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <div key={idx} className={styles.txnItem}>
+            <div>
+              To: {txn.paymentAddress.slice(0, 10)}...
+              {txn.paymentAddress.slice(-10)}
+              <div>
+                <small className="text-muted">Memo: {txn.memo}</small>
+              </div>
+            </div>
+            <div style={{ color: 'red' }}>
+              -{' '}
+              <CtezValue
+                value={(txn.value / 1_000_000).toLocaleString(undefined, {
+                  maximumFractionDigits: 6,
+                })}
+              />
+            </div>
+          </div>
+        ))}
+        <div className={styles.paginationContainer}>
+          <Pagination size="md">
+            <Pagination.First onClick={() => setOutgoingTransactionPage(1)} />
+            <Pagination.Prev
+              onClick={() => {
+                if (outgoingTransactionPage === 1) {
+                  return;
+                }
+                setOutgoingTransactionPage(outgoingTransactionPage - 1);
+              }}
+            />
+            {pageItems}
+            <Pagination.Next
+              onClick={() => {
+                if (outgoingTransactionPage === pages) {
+                  return;
+                }
+                setOutgoingTransactionPage(outgoingTransactionPage + 1);
+              }}
+            />
+            <Pagination.Last
+              onClick={() => setOutgoingTransactionPage(pages)}
+            />
+          </Pagination>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <div className={styles.mainComponentContainer}>
+        <div className={styles.mainComponent}>
+          {saplingWorkerLoaded ? (
+            <Tabs activeKey={tab} onSelect={setTab}>
+              <Tab
+                eventKey="shield"
+                title={
+                  <span>
+                    Shield ctez
+                    <OverlayTrigger
+                      placement="right"
+                      delay={{ show: 250, hide: 400 }}
+                      overlay={<Tooltip>Public</Tooltip>}
+                    >
+                      <i className="fad fa-eye ms-2" />
+                    </OverlayTrigger>
+                  </span>
+                }
+              >
+                {renderShield()}
+              </Tab>
+              <Tab
+                eventKey="transfer"
+                title={
+                  <span>
+                    Transfer
+                    <OverlayTrigger
+                      placement="right"
+                      delay={{ show: 250, hide: 400 }}
+                      overlay={
+                        <Tooltip>
+                          {transferAnonymously ? 'Private' : 'Public'}
+                        </Tooltip>
+                      }
+                    >
+                      <i
+                        className={`fad fa-eye${
+                          transferAnonymously ? '-slash' : ''
+                        } ms-2`}
+                      />
+                    </OverlayTrigger>
+                  </span>
+                }
+              >
+                {renderTransfer()}
+              </Tab>
+              <Tab
+                eventKey="unshield"
+                title={
+                  <span>
+                    Unshield ctez
+                    <OverlayTrigger
+                      placement="right"
+                      delay={{ show: 250, hide: 400 }}
+                      overlay={<Tooltip>Public</Tooltip>}
+                    >
+                      <i className="fad fa-eye ms-2" />
+                    </OverlayTrigger>
+                  </span>
+                }
+              >
+                {renderUnshield()}
+              </Tab>
+              <Tab
+                eventKey="settings"
+                title={
+                  <OverlayTrigger
+                    placement="right"
+                    delay={{ show: 250, hide: 400 }}
+                    overlay={<Tooltip>Settings</Tooltip>}
+                  >
+                    <i className="fad fa-cogs" />
+                  </OverlayTrigger>
+                }
+              >
+                {renderSettings()}
+              </Tab>
+            </Tabs>
+          ) : (
+            <Tabs className="" activeKey={tab} onSelect={setTab}>
+              <Tab
+                eventKey="loadKey"
+                title={
+                  <span>
+                    Load key
+                    <i className="fad fa-key ms-2" />
+                  </span>
+                }
+              >
+                {renderLoadKey()}
+              </Tab>
+              <Tab
+                eventKey="settings"
+                title={
+                  <OverlayTrigger
+                    placement="right"
+                    delay={{ show: 250, hide: 400 }}
+                    overlay={<Tooltip>Settings</Tooltip>}
+                  >
+                    <i className="fad fa-cogs" />
+                  </OverlayTrigger>
+                }
+              >
+                {renderSettings()}
+              </Tab>
+            </Tabs>
+          )}
+          <HelpModal
+            show={showHelpModal}
+            onHide={() => {
+              setShowHelpModal(false);
+            }}
+          />
+          <ConfirmInjectModal
+            txn={confirmInjectTxn}
+            onHide={() => {
+              setIsTransactionPending(false);
+              setConfirmInjectTxn('');
+            }}
+            confirm={() => {
+              const txnId = nanoid();
+              socket.on(txnId, (successful) => {
+                getSaplingAccountData();
+                if (successful) {
+                  triggerToast('Transaction processed', '✅');
+                }
+                socket.off(txnId);
+              });
+
+              submitPrivateTransaction(confirmInjectTxn, txnId)
+                .then(() => {
+                  triggerToast('Transaction submitted', '✅');
+                  getSaplingAccountData();
+                  setIsTransactionPending(false);
+                  setConfirmInjectTxn('');
+                })
+                .catch((err) => {
+                  socket.off(txnId);
+                  console.error(err.message);
+                  triggerToast('Transaction failed', '❌');
+                  setIsTransactionBuilding(false);
+                  setIsTransactionPending(false);
+                  setConfirmInjectTxn('');
+                });
+            }}
+          />
+        </div>
+      </div>
+      {saplingWorkerLoaded ? (
+        <div className={styles.txnComponentContainer}>
+          <div className={styles.txnComponent}>
+            <Tabs activeKey={txnTab} onSelect={setTxnTab}>
+              <Tab eventKey="incoming" title="Incoming Transactions">
+                {renderIncomingTxns()}
+              </Tab>
+              <Tab eventKey="outgoing" title="Outgoing Transactions">
+                {renderOutgoingTxns()}
+              </Tab>
+            </Tabs>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -993,6 +1089,8 @@ Tezmitter.propTypes = {
   socket: PropTypes.object.isRequired,
   // eslint-disable-next-line react/forbid-prop-types
   tezosClient: PropTypes.object.isRequired,
+  // eslint-disable-next-line react/forbid-prop-types
+  transactionHistory: PropTypes.object,
 };
 
 Tezmitter.defaultProps = {
@@ -1001,6 +1099,7 @@ Tezmitter.defaultProps = {
   shieldedBalance: 0,
   saplingWorkerIsLoading: false,
   saplingWorkerLoaded: false,
+  transactionHistory: {},
 };
 
 export default Tezmitter;

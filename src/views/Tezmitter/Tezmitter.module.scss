@@ -13,6 +13,32 @@
   width: 100%;
 }
 
+.txnComponentContainer {
+  display: flex;
+  justify-content: center;
+}
+
+.txnComponent {
+  background-color: #0e111c;
+  border: 1px solid #1b2235;
+  border-radius: 8px;
+  margin: 20px 8px 40px;
+  max-width: 515px;
+  padding: 10px;
+  width: 100%;
+}
+
+.txnItem {
+  background-color: #0e111c;
+  border: 1px solid #1b2235;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 0;
+  padding: 10px;
+  width: 100%;
+}
+
 .tabContent {
   background-color: #131a2a;
   border-left: 1px solid #1b2235;
@@ -46,4 +72,10 @@
 .modalBackdrop {
   width: 100% !important;
   height: 100% !important;
+}
+
+.paginationContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
 }
