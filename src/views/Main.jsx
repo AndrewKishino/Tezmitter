@@ -19,6 +19,8 @@ import { useLocalStorage, useSaplingWorker } from 'hooks';
 import Tezmitter from './Tezmitter';
 import About from './About';
 
+const CTEZ_CONTRACT = process.env.REACT_APP_CTEZ_CONTRACT;
+
 class TzktBeacon extends BlockExplorer {
   /**
    * Return a blockexplorer link for an address
@@ -111,6 +113,8 @@ function Main() {
   const [shieldedBalance, setShieldedBalance] = useState(null);
   const [transactionHistory, setTransactionHistory] = useState(null);
 
+  const [cTezBalance, setCtezBalance] = useState(null);
+
   useEffect(() => {
     socket.on('connect', () => {
       updateConnection(socketDispatch, true);
@@ -141,6 +145,14 @@ function Main() {
       getSaplingAccountData();
     }
   }, [workerLoaded]);
+
+  useEffect(() => {
+    if (account) {
+      getCtezBalance().then(setCtezBalance);
+    } else {
+      setCtezBalance(null);
+    }
+  }, [account]);
 
   useEffect(() => {
     if (rpcUrl) {
@@ -206,6 +218,16 @@ function Main() {
   const getSaplingAccountData = () => {
     worker.exec('getSaplingTransactions').then(setTransactionHistory);
     worker.exec('getSaplingBalance').then(setShieldedBalance);
+    if (account) {
+      getCtezBalance().then(setCtezBalance);
+    }
+  };
+
+  const getCtezBalance = async () => {
+    const cTezContract = await tezosClient.wallet.at(CTEZ_CONTRACT);
+    const storage = await cTezContract.storage();
+    const balance = await storage.tokens.get(account);
+    return balance.toNumber();
   };
 
   return (
@@ -245,6 +267,7 @@ function Main() {
                 setSaplingContract={setSaplingContract}
                 setSecretKey={setSecretKey}
                 shieldedBalance={shieldedBalance}
+                cTezBalance={cTezBalance}
                 socket={socket}
                 tezosClient={tezosClient}
                 transactionHistory={transactionHistory}

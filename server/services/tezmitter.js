@@ -1,23 +1,33 @@
 const { TezosToolkit } = require('@taquito/taquito');
 const { InMemorySigner } = require('@taquito/signer');
+const Queue = require('bee-queue');
 
 const RPC_MAP = {
   mainnet: 'https://mainnet.api.tez.ie',
   ghostnet: 'https://ghostnet.ecadinfra.com',
-  kathmandunet: 'https://kathmandunet.ecadinfra.com',
 };
 
 const tezos = new TezosToolkit(RPC_MAP[process.env.REACT_APP_TEZOS_NETWORK]);
 tezos.setProvider({
-  signer: new InMemorySigner(process.env.FUNDING_SECRET_KEY),
+  signer: new InMemorySigner(
+    process.env.FUNDING_SECRET_KEY,
+    process.env.FUNDING_SECRET_KEY_PASSPHRASE,
+  ),
 });
 
 class Tezmitter {
   constructor(io) {
     this.websocket = io;
-    this.inMemoryQueue = [];
-    this.transactionPending = false;
-    this.settlementProcessorTimeoutId = this.settlementProcessor();
+    this.queue = new Queue('saplingTxQueue');
+
+    this.queue.process(async (job) => {
+      const { txnId, shieldedTx, contract } = job.data;
+      await this.submitPrivateTransaction({
+        txnId,
+        shieldedTx,
+        contract,
+      });
+    });
   }
 
   submitPrivateTransaction = async ({
@@ -55,30 +65,14 @@ class Tezmitter {
       });
   };
 
-  settlementProcessor = () => setTimeout(this.settlementProcess, 15_000);
-
-  settlementProcess = async () => {
-    try {
-      if (!this.transactionPending && this.inMemoryQueue.length) {
-        this.transactionPending = true;
-        const tx = this.inMemoryQueue.shift();
-        await this.submitPrivateTransaction(tx).catch(console.error);
-        this.transactionPending = false;
-      }
-      this.settlementProcessorTimeoutId = this.settlementProcessor();
-    } catch (err) {
-      this.transactionPending = false;
-      this.settlementProcessorTimeoutId = this.settlementProcessor();
-      console.error(err);
-    }
-  };
-
-  queuePrivateTransaction = async ({ txnId, shieldedTx, contract }) => {
-    this.inMemoryQueue.push({
+  queuePrivateTransaction = ({ txnId, shieldedTx, contract }) => {
+    const job = this.queue.createJob({
       txnId,
       shieldedTx,
       contract,
     });
+
+    job.save();
   };
 }
 

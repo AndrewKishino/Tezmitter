@@ -28,7 +28,7 @@ const RPC_MAP = {
   [NetworkType.GHOSTNET]: 'https://ghostnet.ecadinfra.com',
   [NetworkType.KATHMANDUNET]: 'https://kathmandunet.ecadinfra.com',
 };
-const BASE_FEE = parseFloat(process.env.REACT_APP_BASE_FEE);
+const BASE_FEE = process.env.REACT_APP_BASE_FEE;
 const CTEZ_CONTRACT = process.env.REACT_APP_CTEZ_CONTRACT;
 const SAPLING_FEE_ADDRESS = process.env.REACT_APP_SAPLING_FEE_ADDRESS;
 
@@ -63,6 +63,7 @@ function Tezmitter({
   setSecretKey,
   setSaplingContract,
   shieldedBalance,
+  cTezBalance,
   socket,
   tezosClient,
   transactionHistory,
@@ -390,7 +391,14 @@ function Tezmitter({
             isValid={shieldAmountInput > 0}
             isInvalid={shieldAmountInput < 0}
           />
-          <Form.Text className="text-muted">Amount of ctez to shield</Form.Text>
+          <Form.Text className="text-muted">
+            Amount of ctez to shield. cTez balance:{' '}
+            <CtezValue
+              value={(cTezBalance / 1_000_000).toLocaleString(undefined, {
+                maximumFractionDigits: 6,
+              })}
+            />
+          </Form.Text>
         </Form.Group>
         <Form.Group className="mb-3" controlId="shieldMemoInput">
           <Form.Label>Memo (optional)</Form.Label>
@@ -551,7 +559,11 @@ function Tezmitter({
           <Form.Label>
             Amount
             {transferAnonymously ? ' + ' : ''}
-            {transferAnonymously ? <CtezValue value={1} /> : ''}
+            {transferAnonymously ? (
+              <CtezValue value={process.env.REACT_APP_BASE_FEE} />
+            ) : (
+              ''
+            )}
             {transferAnonymously ? ' fee' : ''}
           </Form.Label>
           <Form.Control
@@ -603,7 +615,8 @@ function Tezmitter({
             overlay={
               <Tooltip>
                 Generate the sapling transaction and submit it to a transaction
-                injector service. ( <CtezValue value={1} /> fee )
+                injector service. ({' '}
+                <CtezValue value={process.env.REACT_APP_BASE_FEE} /> fee )
               </Tooltip>
             }
           >
@@ -1083,6 +1096,7 @@ Tezmitter.propTypes = {
   setSaplingContract: PropTypes.func.isRequired,
   setSecretKey: PropTypes.func.isRequired,
   shieldedBalance: PropTypes.number,
+  cTezBalance: PropTypes.number,
   // eslint-disable-next-line react/forbid-prop-types
   socket: PropTypes.object.isRequired,
   // eslint-disable-next-line react/forbid-prop-types
@@ -1095,6 +1109,7 @@ Tezmitter.defaultProps = {
   account: '',
   saplingAccount: '',
   shieldedBalance: 0,
+  cTezBalance: 0,
   saplingWorkerIsLoading: false,
   saplingWorkerLoaded: false,
   transactionHistory: {},

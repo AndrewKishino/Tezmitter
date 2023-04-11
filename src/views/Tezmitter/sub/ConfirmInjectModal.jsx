@@ -26,8 +26,9 @@ function ConfirmInjectModal({ txn, onHide, confirm }) {
       <Modal.Body>
         <p>
           The sapling transaction has been generated. This transaction includes
-          a <CtezValue value={0.5} /> fee if you wish to submit it through an
-          injector service. Please confirm your selection.
+          a <CtezValue value={process.env.REACT_APP_BASE_FEE} /> fee if you wish
+          to submit it through an injector service. Please confirm your
+          selection.
         </p>
       </Modal.Body>
       <Modal.Footer>
