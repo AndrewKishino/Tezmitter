@@ -28,7 +28,7 @@ const RPC_MAP = {
   [NetworkType.GHOSTNET]: 'https://ghostnet.ecadinfra.com',
   [NetworkType.KATHMANDUNET]: 'https://kathmandunet.ecadinfra.com',
 };
-const BASE_FEE = process.env.REACT_APP_BASE_FEE;
+const BASE_FEE = parseInt(process.env.REACT_APP_BASE_FEE, 10);
 const CTEZ_CONTRACT = process.env.REACT_APP_CTEZ_CONTRACT;
 const SAPLING_FEE_ADDRESS = process.env.REACT_APP_SAPLING_FEE_ADDRESS;
 
