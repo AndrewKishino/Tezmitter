@@ -34,7 +34,7 @@ function About() {
       </p>
       <p>
         If you choose to submit the transaction through the injector service the
-        base fee for all anonymous submissions is <CtezValue value={0.5} />. In
+        base fee for all anonymous submissions is <CtezValue value={1} />. In
         addition, the estimated transaction costs are included in the
         transaction. The sapling transaction is submitted to a service to be
         injected in the next available block.

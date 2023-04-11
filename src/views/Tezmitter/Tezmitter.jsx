@@ -551,7 +551,7 @@ function Tezmitter({
           <Form.Label>
             Amount
             {transferAnonymously ? ' + ' : ''}
-            {transferAnonymously ? <CtezValue value={0.5} /> : ''}
+            {transferAnonymously ? <CtezValue value={1} /> : ''}
             {transferAnonymously ? ' fee' : ''}
           </Form.Label>
           <Form.Control
@@ -603,7 +603,7 @@ function Tezmitter({
             overlay={
               <Tooltip>
                 Generate the sapling transaction and submit it to a transaction
-                injector service. ( <CtezValue value={0.5} /> fee )
+                injector service. ( <CtezValue value={1} /> fee )
               </Tooltip>
             }
           >
