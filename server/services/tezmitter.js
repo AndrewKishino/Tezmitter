@@ -18,7 +18,9 @@ tezos.setProvider({
 class Tezmitter {
   constructor(io) {
     this.websocket = io;
-    this.queue = new Queue('saplingTxQueue');
+    this.queue = new Queue(
+      `saplingTxQueue-${process.env.REACT_APP_TEZOS_NETWORK}`,
+    );
 
     this.queue.process(async (job) => {
       const { txnId, shieldedTx, contract } = job.data;
