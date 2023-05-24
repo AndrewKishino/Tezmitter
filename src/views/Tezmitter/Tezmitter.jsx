@@ -347,7 +347,7 @@ function Tezmitter({
             setSecretKey([secretKeyInput, loadAccountMethod]);
             setSecretKeyInput('');
           }}
-          disabled={saplingWorkerIsLoading}
+          disabled={!secretKeyInputIsValid || saplingWorkerIsLoading}
         >
           {saplingWorkerIsLoading ? (
             <>
@@ -371,7 +371,7 @@ function Tezmitter({
           onClick={() => {
             setShowHelpModal(true);
           }}
-          disabled={!secretKeyInputIsValid || saplingWorkerIsLoading}
+          disabled={saplingWorkerIsLoading}
         >
           Help
         </Button>
