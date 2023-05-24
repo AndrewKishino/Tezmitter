@@ -1,5 +1,5 @@
 /* eslint-disable global-require */
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import Button from 'react-bootstrap/Button';
@@ -10,6 +10,8 @@ import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 import Headroom from 'headroom.js';
 
+import GenerateSaplingAccountModal from './sub/GenerateSaplingAccountModal';
+
 function AppNavbar({
   account,
   connectDapp,
@@ -17,6 +19,9 @@ function AppNavbar({
   reInitializeSapling,
   saplingAccount,
 }) {
+  const [showGenerateSaplingAccountModal, setShowGenerateSaplingAccountModal] =
+    useState(false);
+
   useEffect(() => {
     const headroom = new Headroom(document.getElementById('navbar-main'));
     headroom.init();
@@ -58,7 +63,14 @@ function AppNavbar({
               )}`}</Button>
             </OverlayTrigger>
           ) : (
-            <Button className="me-2">Load Sapling Account</Button>
+            <Button
+              className="me-2 text-light"
+              onClick={() => {
+                setShowGenerateSaplingAccountModal(true);
+              }}
+            >
+              Create Sapling Account
+            </Button>
           )}
           {account ? (
             <OverlayTrigger
@@ -76,6 +88,12 @@ function AppNavbar({
           )}
         </Nav>
       </Container>
+      <GenerateSaplingAccountModal
+        show={showGenerateSaplingAccountModal}
+        onHide={() => {
+          setShowGenerateSaplingAccountModal(false);
+        }}
+      />
     </Navbar>
   );
 }

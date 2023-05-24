@@ -9,7 +9,9 @@ module.exports = {
           Buffer: ['buffer', 'Buffer'],
         }),
         new webpack.IgnorePlugin({
-          resourceRegExp: /^\.\/wordlists\/(?!english)/,
+          checkResource(resource) {
+            return /.*\/wordlists\/(?!english).*\.json/.test(resource);
+          },
         }),
         new webpack.IgnorePlugin({
           resourceRegExp: /bip39\/src$/,

@@ -100,7 +100,7 @@ function Main() {
 
   const [tezosClient] = useState(new TezosToolkit(rpcUrl));
 
-  const [secretKey, setSecretKey] = useState('');
+  const [secretKey, setSecretKey] = useState([]);
   const [
     worker,
     reInitializeSapling,
@@ -140,7 +140,7 @@ function Main() {
 
   useEffect(() => {
     if (workerLoaded) {
-      setSecretKey('');
+      setSecretKey([]);
       getPaymentAddress();
       getSaplingAccountData();
     }

@@ -6,6 +6,9 @@ import { Prefix, prefix, b58cencode } from '@taquito/utils';
 import * as sapling from '@airgap/sapling-wasm';
 import * as bip39 from 'bip39';
 
+const SECRET_KEY_METHOD = 0;
+const MNEMONIC_METHOD = 1;
+
 let iMSK;
 let sTk;
 
@@ -24,9 +27,18 @@ const createExtendedSpendingKey = async (mnemonic) => {
   return b58cencode(spendingKeyArr, prefix[Prefix.SASK]);
 };
 
-const loadSaplingSecret = (sk, saplingContractAddress, rpcUrl) => {
+const loadSaplingSecret = async (sk, saplingContractAddress, rpcUrl) => {
   try {
-    iMSK = new InMemorySpendingKey(sk);
+    const secretKey = sk[0];
+    const loadAccountMethod = sk[1];
+
+    if (loadAccountMethod === SECRET_KEY_METHOD) {
+      iMSK = new InMemorySpendingKey(secretKey);
+    } else if (loadAccountMethod === MNEMONIC_METHOD) {
+      iMSK = await InMemorySpendingKey.fromMnemonic(secretKey);
+    } else {
+      throw new Error('Invalid account loading method provided');
+    }
   } catch (err) {
     iMSK = null;
     sTk = null;

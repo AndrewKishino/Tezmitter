@@ -15,7 +15,7 @@ function ConfirmInjectModal({ txn, onHide, confirm }) {
       size="md"
       aria-labelledby="contained-modal-title-vcenter"
       centered
-      animation={false}
+      animation
       backdropClassName={styles.modalBackdrop}
     >
       <Modal.Header closeButton closeVariant="white">

@@ -18,7 +18,7 @@ export function useSaplingWorker(sk, saplingContractAddress, rpcUrl) {
   }, []);
 
   useEffect(() => {
-    if (sk) {
+    if (typeof sk[0] !== 'undefined' && typeof sk[1] !== 'undefined') {
       setWorkerIsLoading(true);
       saplingWorker
         .exec('loadSaplingSecret', [sk, saplingContractAddress, rpcUrl])

@@ -11,6 +11,7 @@ import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import Tooltip from 'react-bootstrap/Tooltip';
 import toast from 'react-hot-toast';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { NetworkType } from '@airgap/beacon-dapp';
 import { nanoid } from 'nanoid';
 
@@ -33,6 +34,9 @@ const CTEZ_CONTRACT = process.env.REACT_APP_CTEZ_CONTRACT;
 const SAPLING_FEE_ADDRESS = process.env.REACT_APP_SAPLING_FEE_ADDRESS;
 
 const ITEMS_PER_PAGE = 10;
+
+const SECRET_KEY_METHOD = 0;
+const MNEMONIC_METHOD = 1;
 
 const isValidUrl = (urlString = '') => {
   try {
@@ -72,6 +76,7 @@ function Tezmitter({
   const [tab, setTab] = useState('loadKey');
   const [txnTab, setTxnTab] = useState('incoming');
 
+  const [loadAccountMethod, setLoadAccountMethod] = useState(MNEMONIC_METHOD);
   const [secretKeyInput, setSecretKeyInput] = useState('');
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [confirmInjectTxn, setConfirmInjectTxn] = useState('');
@@ -101,7 +106,9 @@ function Tezmitter({
 
   // Input validation
   const secretKeyInputIsValid =
-    secretKeyInput.startsWith('sask') && secretKeyInput.length === 241;
+    loadAccountMethod === MNEMONIC_METHOD
+      ? secretKeyInput.trim().split(/\s+/g).length >= 12
+      : secretKeyInput.startsWith('sask') && secretKeyInput.length === 241;
   const shieldAddressInputIsValid =
     shieldAddressInput.startsWith('zet') && shieldAddressInput.length === 69;
   const unshieldAddressInputIsValid =
@@ -297,11 +304,35 @@ function Tezmitter({
     <div className={styles.tabContent}>
       <Form>
         <Form.Group className="mb-3" controlId="secretKeyTextarea">
-          <Form.Label>Sapling Secret Key</Form.Label>
+          <Form.Label
+            style={{ display: 'flex', justifyContent: 'space-between' }}
+          >
+            {loadAccountMethod === MNEMONIC_METHOD ? (
+              <div>Sapling Mnemonic</div>
+            ) : (
+              <div>Sapling Secret Key</div>
+            )}
+            <div className="d-flex">
+              <span className="me-2">Mnemonic</span>
+              <Form.Switch
+                label=""
+                id="account-input-switch"
+                checked={loadAccountMethod === SECRET_KEY_METHOD}
+                onChange={(evt) => {
+                  setLoadAccountMethod(
+                    evt.target.checked ? SECRET_KEY_METHOD : MNEMONIC_METHOD,
+                  );
+                }}
+              />
+              <span>Secret Key</span>
+            </div>
+          </Form.Label>
           <Form.Control
             as="textarea"
             rows={7}
-            placeholder="sask..."
+            placeholder={
+              loadAccountMethod === MNEMONIC_METHOD ? 'words...' : 'sask...'
+            }
             onChange={(evt) => setSecretKeyInput(evt.target.value)}
             value={secretKeyInput}
             isValid={secretKeyInputIsValid}
@@ -313,7 +344,7 @@ function Tezmitter({
         <Button
           variant="primary"
           onClick={() => {
-            setSecretKey(secretKeyInput);
+            setSecretKey([secretKeyInput, loadAccountMethod]);
             setSecretKeyInput('');
           }}
           disabled={saplingWorkerIsLoading}
@@ -340,7 +371,7 @@ function Tezmitter({
           onClick={() => {
             setShowHelpModal(true);
           }}
-          disabled={saplingWorkerIsLoading}
+          disabled={!secretKeyInputIsValid || saplingWorkerIsLoading}
         >
           Help
         </Button>
@@ -1053,17 +1084,38 @@ function Tezmitter({
         <div className={styles.txnComponentContainer}>
           <div className={styles.txnComponent}>
             <div className={styles.balanceContainer}>
-              <span>
-                Shielded balance:{' '}
-                <CtezValue
-                  value={(shieldedBalance / 1_000_000).toLocaleString(
-                    undefined,
-                    {
-                      maximumFractionDigits: 6,
-                    },
-                  )}
-                />
-              </span>
+              <div className={styles.balanceContent}>
+                <span>
+                  Shielded balance:{' '}
+                  <CtezValue
+                    value={(shieldedBalance / 1_000_000).toLocaleString(
+                      undefined,
+                      {
+                        maximumFractionDigits: 6,
+                      },
+                    )}
+                  />
+                </span>
+              </div>
+              <div className={styles.balanceContent}>
+                <span>
+                  Shielded address:{' '}
+                  {`${saplingAccount?.slice(0, 10)}...${saplingAccount?.slice(
+                    -10,
+                  )}`}
+                  <CopyToClipboard
+                    text={saplingAccount}
+                    onCopy={() =>
+                      triggerToast('Copied to clipboard', '📋', 2_000)
+                    }
+                  >
+                    <i
+                      style={{ cursor: 'pointer' }}
+                      className="fas fa-copy ms-2"
+                    />
+                  </CopyToClipboard>
+                </span>
+              </div>
             </div>
             <Tabs activeKey={txnTab} onSelect={setTxnTab}>
               <Tab eventKey="incoming" title="Incoming Transactions">
