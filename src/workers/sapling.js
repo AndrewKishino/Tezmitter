@@ -13,9 +13,7 @@ let iMSK;
 let sTk;
 
 const createExtendedSpendingKey = async (mnemonic) => {
-  const fullSeed = await bip39.mnemonicToSeed(
-    mnemonic || bip39.generateMnemonic(),
-  );
+  const fullSeed = await bip39.mnemonicToSeed(mnemonic);
   const first32 = fullSeed.subarray(0, 32);
   const second32 = fullSeed.subarray(32);
   const seed = Buffer.from(

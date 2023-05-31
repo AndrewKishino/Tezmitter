@@ -8,7 +8,7 @@ import Modal from 'react-bootstrap/Modal';
 import styles from './GenerateSaplingAccountModal.module.scss';
 
 const generateMnemonic = () => {
-  const mnemonic = bip39.generateMnemonic();
+  const mnemonic = bip39.generateMnemonic(256);
   return mnemonic;
 };
 
